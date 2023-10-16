@@ -15,6 +15,8 @@ import subprocess
 from datetime import date
 from pathlib import Path
 from time import sleep
+from selenium.webdriver.chrome.options import Options
+from pyvirtualdisplay import Display
 
 from docopt import docopt
 from filelock import FileLock, Timeout
@@ -23,13 +25,19 @@ from helium import *
 helium_lock = FileLock(".helium_lock", timeout=60 * 60)
 
 
+
 def login_to_ade(username: str, password: str = "", verbose=False, logger=print):
+
+    chrome_options = Options()
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+
     password = password or subprocess.run(
         ["rbw", "get", "inp-toulouse.fr"], capture_output=True
     ).stdout.decode("utf-8")
     if verbose:
         logger(f"Logging in as {username}…")
-    start_firefox("http://planete.inp-toulouse.fr", headless=True)
+    start_chrome("http://planete.inp-toulouse.fr", headless=False, options=chrome_options)
 
     click("S'identifier")
     write(username, into="Username")
@@ -101,11 +109,14 @@ def main(
 ):
     with helium_lock:
         logger("Acquired helium lock")
+        display = Display(visible=0, size=(800, 600))
+        display.start()
         login_to_ade(login_as_username, password, verbose, logger)
         go_to_user_planning(for_username, verbose, logger)
         resource_id = get_resource_id(verbose, logger)
         ical_url = make_ical_url(resource_id, verbose, logger)
         kill_browser()
+        display.stop()
     logger("Released helium lock")
     logger(ical_url)
     return ical_url

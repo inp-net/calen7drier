@@ -16,6 +16,7 @@ flask = "^3.0.0"
 rich = "^13.6.0"
 filelock = "^3.12.4"
 uwsgi = "^2.0.22"
+pyvirtualdisplay = "^3.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
