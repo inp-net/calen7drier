@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-from pathlib import Path
-import requests
 import json
-from main import main
-from ics import Calendar
-from typing import NamedTuple, Iterable, Any
 from datetime import datetime
+from os import getenv
+from pathlib import Path
+from typing import Any, Iterable, NamedTuple
+
+import requests
+from filelock import FileLock
+from ics import Calendar
+from main import main
 from pytz import timezone
 
+REQUESTS_LOCK = FileLock(".requests_lock")
 
 class ADEEvent(NamedTuple):
     starts_at: datetime
@@ -18,12 +22,14 @@ class ADEEvent(NamedTuple):
     title: str
 
 
-def parse_feed(url: str) -> Iterable[ADEEvent]:
-    calendar = Calendar(requests.get(url).text)
+def parse_feed(url: str, logger = print) -> Iterable[ADEEvent]:
+    with REQUESTS_LOCK:
+        logger("Acquired requests lock")
+        calendar = Calendar(requests.get(url).text)
+    logger("Released requests lock")
 
     for event in calendar.events:
         if " - " not in event.name:
-            print(f"Skipping event {event.name}")
             continue
         [apogee_code, rest] = event.name.split(" - ", 1)
 
@@ -45,18 +51,8 @@ def parse_feed(url: str) -> Iterable[ADEEvent]:
         )
 
 
-if __name__ == "__main__":
-    """
-    ical_url = main({
-        '<for_username>': input('for: '),
-        '<login_as_username>': 'elebihan',
-        '<password>': None,
-        '--verbose': True
-    })
-    """
-    ical_url = "https://edt.inp-toulouse.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources=3018&projectId=65&calType=ical&firstDate=2023-09-01&lastDate=2024-08-20"
-
-    feed = list(parse_feed(ical_url))
+def feed_as_json(ical_url: str, logger = print) -> list[dict[str, Any]]:
+    feed = list(parse_feed(ical_url, logger))
 
     def with_camel_case_keys(o: dict[str, Any]) -> dict[str, Any]:
         def transform_key(key: str) -> str:
@@ -72,14 +68,20 @@ if __name__ == "__main__":
             for key, value in o.items()
         }
 
-    Path("feed.json").write_text(
-        json.dumps(
-            [with_camel_case_keys(event._asdict()) for event in feed],
-            indent=4,
-            default=lambda x: x.isoformat(),
-            ensure_ascii=False,
-        )
+    return [with_camel_case_keys(event._asdict()) for event in feed]
+
+
+def main(username: str):
+    ical_url = main(
+        {
+            "<for_username>": username,
+            "<login_as_username>": getenv("LOGIN_AS"),
+            "<password>": getenv("PASSWORD"),
+            "--verbose": True,
+        }
     )
+
+    feed = list(parse_feed(ical_url))
 
     for event in feed:
         if event.type in {"Examen", "BE"}:

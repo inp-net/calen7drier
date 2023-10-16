@@ -177,3 +177,8 @@ pyrightconfig.json
 
 # Environment variables
 .env
+k8s/secrets.yaml
+ade_feed_url/cache/.lock
+ade_feed_url/.helium_lock
+ade_feed_url/.requests_lock
+ade_feed_url/cache
