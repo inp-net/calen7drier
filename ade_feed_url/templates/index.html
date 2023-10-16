@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ajouter les cours dans son calendrier</title>
+  </head>
+  <body>
+    <h1>Ajouter les cours dans son calendrier</h1>
+
+    <form id="form">
+      <label>
+        Identifiant de l'école
+        <input id="identifiant" type="text" />
+      </label>
+
+      <button type="submit">Valider</button>
+    </form>
+
+    <section class="url">
+      <h2>URL à utiliser</h2>
+      <span class="loading hidden"
+        >Chargement en cours... (peut prendre une trentaine de secondes)</span
+      >
+      <code id="url"></code>
+    </section>
+
+<section class="how">
+  <h2>Comment faire?</h2>
+  <p>Pour Google Agenda</p>
+  <ol>
+    <li>Il faut être sur ordi</li>
+    <li>Rentrez votre identifiant</li>
+    <li>Cliquez sur valider</li>
+    <li>Attendez le chargement (peut être long, on émule un navigateur web automatisé en fond)</li>
+    <li>Copiez l'URL</li>
+    <li>Allez sur Google Agenda</li>
+    <li>Cliquez sur le + dans "Autres agendas"</li>
+    <li>Choisissez "Depuis une URL"</li>
+    <li>Collez l'URL</li>
+    <li>Et voilà ;)</li>
+  </ol>
+
+</section>
+
+    <script>
+      document.getElementById("form").addEventListener("submit", (event) => {
+        console.log("got submit")
+        event.preventDefault()
+        document.querySelector(".loading").classList.remove("hidden")
+        const uid = document.getElementById("identifiant").value
+        fetch(`/${uid}/url`)
+          .then((response) => response.text())
+          .then((text) => {
+            document.getElementById("url").innerText = text
+            document.querySelector(".loading").classList.add("hidden")
+          })
+      })
+    </script>
+
+    <style>
+      .loading.hidden {
+        display: none;
+      }
+    </style>
+  </body>
+</html>

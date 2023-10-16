@@ -7,13 +7,14 @@ from time import sleep
 from typing import Any, NamedTuple, Optional
 
 import rich
-from werkzeug.middleware.proxy_fix import ProxyFix
 from filelock import FileLock
-from flask import Flask, redirect
+from flask import Flask, redirect, render_template
+from jinja2 import Template
 from main import main, school_year_start
 from parse_feed import feed_as_json
-
 from rich.console import Console
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 console = Console()
 
 
@@ -26,9 +27,9 @@ def log(uid: str | None, area: str, message: str, error=False):
         + (
             f"[{magenta}]@{uid}[/{magenta}] " if uid else f"[{magenta}][/{magenta}]"
         ).ljust(30)
-        + message.replace('[', '\\['),
+        + message.replace("[", "\\["),
         soft_wrap=False,
-        crop=False
+        crop=False,
     )
 
 
@@ -129,10 +130,12 @@ def get_feed_url(uid: str) -> str:
         return cached
 
     log(uid, "main", f"{uid} not in cache, scraping")
+    log(uid, "env", f"using LOGIN_AS={getenv('LOGIN_AS', '')!r} PASSWORD={len(getenv('PASSWORD', '')) * '*'!r}")
+
     url = main(
-        getenv("LOGIN_AS"),
+        getenv("LOGIN_AS", ""),
         uid,
-        getenv("PASSWORD"),
+        getenv("PASSWORD", ""),
         True,
         lambda *args: log(uid, "ade", " ".join(args)),
     )
@@ -145,14 +148,31 @@ def get_feed_url(uid: str) -> str:
 def favicon():
     return "", 404
 
+@app.route("/")
+def home():
+    return render_template("index.html")
+
 @app.route("/<uid>")
 def redirect_to_feed(uid: str):
     try:
         url = get_feed_url(uid)
     except Exception as e:
-        log(uid, "redirect", f"Failed with exception {e}", True)
+        if str(e) == "Not found":
+            return "not found", 404
+        log(uid, "redirect", f"Failed with exception {str(e)}", True)
         return "internal error", 500
     return redirect(url)
+
+@app.route("/<uid>/url")
+def show_feed_url(uid: str):
+    try:
+        url = get_feed_url(uid)
+    except Exception as e:
+        if str(e) == "Not found":
+            return "not found", 404
+        log(uid, "redirect", f"Failed with exception {e}", True)
+        return "internal error", 500
+    return url, 200
 
 
 @app.route("/<uid>/invalidate")
@@ -173,5 +193,7 @@ def json_feed(uid: str):
             200,
         )
     except Exception as e:
+        if str(e) == "Not found":
+            return "not found", 404
         log(uid, "json_feed", f"Failed with exception {e}", True)
         return "internal error", 500
