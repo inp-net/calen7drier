@@ -53,8 +53,12 @@ def login_to_ade(username: str, password: str = "", verbose=False, logger=print)
 def go_to_user_planning(username: str, verbose=False, logger=print):
     if verbose:
         logger(f"Opening advanced search")
+    button_selector = "button[aria-describedby=x-auto-7]"
+    if verbose: logger(f"Waiting for {button_selector!r} to exist on page...")
+    wait_until(S(button_selector).exists)
+    if verbose: logger(f"Clicking on {button_selector!r}")
     get_driver().execute_script(
-        'document.querySelector("button[aria-describedby=x-auto-7]").click()'
+        f'document.querySelector({button_selector!r}).click()'
     )
     sleep(3)
     if verbose:
@@ -71,10 +75,14 @@ def go_to_user_planning(username: str, verbose=False, logger=print):
 def get_resource_id(verbose=False, logger=print) -> str:
     if verbose:
         logger(f"Scraping resource id")
+    selector = '.x-grid3-row-selected[id^=\"Direct Planning Tree\"] .x-tree3-node[id^=\"Direct Planning Tree\"]'
+    if verbose: logger(f"Waiting for {selector!r} to exist on page")
+    wait_until(S(selector).exists)
+    if verbose: logger(f"Getting id attribute of {selector!r}")
     resource_id = (
         get_driver()
         .execute_script(
-            "return document.querySelector('.x-grid3-row-selected[id^=\"Direct Planning Tree\"] .x-tree3-node[id^=\"Direct Planning Tree\"]').getAttribute('id').replace('Direct Planning Tree_')"
+            f"return document.querySelector({selector!r}).getAttribute('id').replace('Direct Planning Tree_')"
         )
         .replace("undefined", "")
     )

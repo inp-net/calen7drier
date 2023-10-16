@@ -13,17 +13,22 @@ from flask import Flask, redirect
 from main import main, school_year_start
 from parse_feed import feed_as_json
 
+from rich.console import Console
+console = Console()
+
 
 def log(uid: str | None, area: str, message: str, error=False):
     c = lambda color: "red" if error else color
     cyan = c("cyan")
     magenta = c("magenta")
-    rich.print(
+    console.print(
         f"\\[[{cyan} bold]{area}[/{cyan} bold]] ".ljust(40)
         + (
             f"[{magenta}]@{uid}[/{magenta}] " if uid else f"[{magenta}][/{magenta}]"
         ).ljust(30)
-        + message
+        + message.replace('[', '\\['),
+        soft_wrap=False,
+        crop=False
     )
 
 
@@ -43,6 +48,7 @@ def revive_datestrings(o: dict[str, Any]):
 
 @contextmanager
 def open_cache(mode: str, uid: str):
+    # TODO don't acquire lock if reading?
     with CACHE_LOCK:
         log(uid, "lock:acquire", "Acquired cache lockfile")
         if not CACHE_LOCATION.parent.exists() or not CACHE_LOCATION.exists():
@@ -135,6 +141,9 @@ def get_feed_url(uid: str) -> str:
     cache.add(uid, url)
     return url
 
+@app.route("/favicon.ico")
+def favicon():
+    return "", 404
 
 @app.route("/<uid>")
 def redirect_to_feed(uid: str):
