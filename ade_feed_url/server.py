@@ -3,17 +3,13 @@ from contextlib import contextmanager
 from datetime import date, datetime
 from os import getenv
 from pathlib import Path
-from time import sleep
 from typing import Any, NamedTuple, Optional
 
-import rich
 from filelock import FileLock
 from flask import Flask, redirect, render_template
-from jinja2 import Template
 from main import main, school_year_start
-from parse_feed import feed_as_json
+from parse_feed import feed_as_json, parse_feed
 from rich.console import Console
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 console = Console()
 
@@ -31,6 +27,10 @@ def log(uid: str | None, area: str, message: str, error=False):
         soft_wrap=False,
         crop=False,
     )
+
+
+def logger_of(uid: str | None, area: str):
+    return lambda *args: log(uid, area, " ".join(args))
 
 
 app = Flask("ade_feed_url")
@@ -67,7 +67,7 @@ def read_cache(uid: str):
     log(uid, "cache:read", f"Reading cache at {CACHE_LOCATION}")
     with open_cache("r", uid) as f:
         cache: dict[str, CacheEntry] = {
-            uid: CacheEntry(**revive_datestrings(entry))
+            uid: CacheEntry(**revive_datestrings(entry))  # type: ignore
             for uid, entry in json.load(f).items()
         }
         log(uid, "cache:read", f"Read cache ({len(cache)} entries)")
@@ -130,7 +130,11 @@ def get_feed_url(uid: str) -> str:
         return cached
 
     log(uid, "main", f"{uid} not in cache, scraping")
-    log(uid, "env", f"using LOGIN_AS={getenv('LOGIN_AS', '')!r} PASSWORD={len(getenv('PASSWORD', '')) * '*'!r}")
+    log(
+        uid,
+        "env",
+        f"using LOGIN_AS={getenv('LOGIN_AS', '')!r} PASSWORD={len(getenv('PASSWORD', '')) * '*'!r}",
+    )
 
     url = main(
         getenv("LOGIN_AS", ""),
@@ -144,13 +148,16 @@ def get_feed_url(uid: str) -> str:
     cache.add(uid, url)
     return url
 
+
 @app.route("/favicon.ico")
 def favicon():
     return "", 404
 
+
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/<uid>")
 def redirect_to_feed(uid: str):
@@ -162,6 +169,7 @@ def redirect_to_feed(uid: str):
         log(uid, "redirect", f"Failed with exception {str(e)}", True)
         return "internal error", 500
     return redirect(url)
+
 
 @app.route("/<uid>/url")
 def show_feed_url(uid: str):
@@ -196,4 +204,43 @@ def json_feed(uid: str):
         if str(e) == "Not found":
             return "not found", 404
         log(uid, "json_feed", f"Failed with exception {e}", True)
+        return "internal error", 500
+
+
+@app.route("/<uid>/<subject_code>/next-exam/")
+def next_exam(uid: str, subject_code: str):
+    try:
+        url = get_feed_url(uid)
+        events_of_subject = [
+            event
+            for event in parse_feed(url, logger=logger_of(uid, "next_exam"))
+            if event.apogee_code.lower() == subject_code.lower()
+            and event.type.lower().strip()
+            in {"be", "exam", "examen", "partiel", "oral"}
+        ]
+        events_of_subject.sort(key=lambda event: event.starts_at)
+        if not len(events_of_subject):
+            return "subject not found or no exams in subject", 404
+        event = events_of_subject[0]
+        return event._asdict() | {
+            "starts_at": event.starts_at.isoformat(),
+            "ends_at": event.ends_at.isoformat(),
+        }
+    except Exception as e:
+        if str(e) == "Not found":
+            return "user not found", 404
+        log(uid, "next_exam", f"Failed with exception {e}", True)
+        return "internal error", 500
+
+
+@app.route("/<uid>/subjects")
+def subjects(uid: str):
+    try:
+        url = get_feed_url(uid)
+        feed = parse_feed(url, logger=logger_of(uid, "subjects"))
+        return {e.apogee_code: e.title for e in feed if e.apogee_code.startswith("N")}
+    except Exception as e:
+        if str(e) == "Not found":
+            return "user not found", 404
+        log(uid, "subjects", f"Failed with exception {e!r}", True)
         return "internal error", 500
