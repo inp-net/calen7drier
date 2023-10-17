@@ -161,6 +161,11 @@ def favicon():
 def home():
     return render_template("index.html")
 
+@app.route("/cache")
+def cache_status():
+    with read_cache("(cache_status)") as cache:
+        return f"{len(cache)} entries", 200
+
 
 @app.route("/<uid>")
 def redirect_to_feed(uid: str):
