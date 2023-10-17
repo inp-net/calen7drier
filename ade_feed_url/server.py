@@ -7,6 +7,7 @@ from typing import Any, NamedTuple, Optional
 
 from filelock import FileLock
 from flask import Flask, redirect, render_template
+from pytz import timezone
 from main import main, school_year_start
 from parse_feed import feed_as_json, parse_feed
 from rich.console import Console
@@ -38,6 +39,8 @@ app = Flask("ade_feed_url")
 
 CACHE_LOCATION = Path("cache/cache.json")
 CACHE_LOCK = FileLock("cache/.lock")
+
+EXAM_TYPES = {"be", "exam", "examen", "partiel", "oral"}
 
 
 def revive_datestrings(o: dict[str, Any]):
@@ -215,21 +218,52 @@ def next_exam(uid: str, subject_code: str):
             event
             for event in parse_feed(url, logger=logger_of(uid, "next_exam"))
             if event.apogee_code.lower() == subject_code.lower()
-            and event.type.lower().strip()
-            in {"be", "exam", "examen", "partiel", "oral"}
+            and event.type.lower().strip() in EXAM_TYPES
         ]
         events_of_subject.sort(key=lambda event: event.starts_at)
         if not len(events_of_subject):
             return "subject not found or no exams in subject", 404
         event = events_of_subject[0]
-        return event._asdict() | {
-            "starts_at": event.starts_at.isoformat(),
-            "ends_at": event.ends_at.isoformat(),
-        }
+        return event.serialize()
     except Exception as e:
         if str(e) == "Not found":
             return "user not found", 404
         log(uid, "next_exam", f"Failed with exception {e}", True)
+        return "internal error", 500
+
+
+@app.route("/<uid>/next-exams")
+def next_exams(uid: str):
+    try:
+        url = get_feed_url(uid)
+        exams = [
+            event
+            for event in parse_feed(url, logger=logger_of(uid, "next_exams"))
+            if event.type.lower().strip() in EXAM_TYPES
+        ]
+
+        def closest_of_subject(subject_code: str):
+            return sorted(
+                filter(
+                    lambda event: event.apogee_code.lower() == subject_code.lower(),
+                    exams,
+                ),
+                key=lambda event: (
+                    event.starts_at.astimezone(timezone("Europe/Paris"))
+                    - datetime.now(timezone("Europe/Paris"))
+                ),
+            )[0]
+
+        apogee_codes = {e.apogee_code for e in exams}
+
+        if not len(exams):
+            return "user not found or no exams for user", 404
+
+        return {code: closest_of_subject(code).serialize() for code in apogee_codes}
+    except Exception as e:
+        if str(e) == "Not found":
+            return "user not found", 404
+        log(uid, "next_exams", f"Failed with exception {e}", True)
         return "internal error", 500
 
 

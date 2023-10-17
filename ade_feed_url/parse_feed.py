@@ -22,6 +22,12 @@ class ADEEvent(NamedTuple):
     group: str
     title: str
 
+    def serialize(self):
+        return self._asdict() | {
+            "starts_at": self.starts_at.isoformat(),
+            "ends_at": self.ends_at.isoformat(),
+        }
+
 
 def parse_feed(url: str, logger=print) -> Iterable[ADEEvent]:
     with REQUESTS_LOCK:
