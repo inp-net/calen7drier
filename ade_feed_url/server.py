@@ -445,3 +445,8 @@ def subjects(uid: str):
             return "user not found", 404
         log(uid, "subjects", f"Failed with exception {e!r}", True)
         return "internal error", 500
+
+@app.after_request
+def handle_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
