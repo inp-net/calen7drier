@@ -1,0 +1,322 @@
+html{
+  height:100%;
+  overflow: auto;
+}
+
+header{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #2E55C1;
+  /*ancienne couleur dans le doute : rgb(0, 144, 255)*/
+  width: 100%;
+}
+
+.content{
+  flex-grow:1;
+}
+
+h1{
+  color: white;
+  margin-left:0.75em;
+  font-size: 1.7em;
+}
+
+h2{
+  font-size:1rem;
+}
+
+p{
+  margin:0;
+}
+
+a{
+  text-decoration:none;
+  font-weight: bold;
+  color: #2E55C1;
+}
+
+a:visited{
+  color: #2E55C1;
+}
+
+a:hover{
+  text-decoration:underline;
+}
+
+#logoMobile{
+  height:3.6rem;
+}
+
+#logoPC{
+  height:4.2rem;
+  width: 4.2rem;
+}
+
+
+#headerDroite{
+  display: flex;
+  align-items: center;
+  height:3.6rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+#headerDroite p{
+  color: white;
+  font-weight: bold;
+  font-size : 1.4rem;
+  margin-right: 1.1rem;
+  
+}
+
+body{
+  margin: 0;
+	padding: 0;
+  height:100%;
+
+  display : flex;
+  flex-direction: column;
+  align-items: center;
+
+  font-family: 'Space Grotesk', sans-serif;
+  background-color: rgb(245, 245, 245);
+}
+/*config du premier menu*/
+#menuSearch{
+  display:flex;
+  flex-direction: column;
+}
+
+#menuSearch p{
+  margin: 0;
+  margin-bottom: 0.2rem;
+}
+
+#searchBar{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+
+#identifiant{
+  border-radius:0.5rem;
+  border:solid 0.1rem rgb(156, 163, 175);
+  padding:0.2rem;
+  padding-left:0.3rem;
+}
+
+#identifiant:focus{
+  border-color:rgb(39, 39, 39);
+  outline:0;
+
+}
+
+button{
+  width: 5rem;
+  height: 1.4rem;
+
+  background-color:white;
+  
+  border-radius:0.6rem;
+  border:solid 0.1rem rgb(156, 163, 175);
+
+  color: black;
+  font-family: 'Space Grotesk', sans-serif;
+
+  transition-property: background-color;
+  transition-property: border;
+  transition-property: color;
+
+  transition-duration: 0.2s;
+}
+
+button:hover{
+  background-color: rgb(156, 163, 175);
+  cursor: pointer;
+}
+
+.menu{
+  display: flex;
+  flex-direction: column;
+  flex-grow:1;
+
+  margin-top:6rem;
+  margin-bottom:6rem;
+  row-gap: 1.7rem;
+}
+
+.card{
+  display:flex;
+  flex-direction : column;
+
+  background-color: white;
+
+  border :solid 0.1rem gray; 
+  border-radius: 2em;
+
+  margin-left: 1rem;
+  margin-right: 1rem;
+  
+  padding: 1em;
+  padding-left: 1.5em;
+  padding-right: 1.5em;
+  max-width: 20em;
+
+  box-shadow: 0.4rem 0.4rem 1rem rgb(177, 177, 177); 
+}
+
+.how h2{
+  margin:0;
+  margin-bottom: 0.6rem;
+
+  padding:0;
+}
+
+.introTuto{
+  display:flex;
+  align-items:center;
+  gap: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.calendrierLogo{
+  width: 2rem;
+  height: 2rem;
+}
+
+.custom-counter{
+  margin:0;
+  padding:0;
+  list-style-type: none;
+}
+
+.custom-counter li{
+  display: flex;
+  align-items: center;
+  counter-increment: step-counter;
+  margin-top: 0.7rem;
+}
+
+.custom-counter li::before{
+  content: counter(step-counter);
+
+  margin-right:0.7rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+
+  border : solid 0.1rem #2E55C1;
+  border-radius : 300rem;
+  background-color: #2E55C1;
+
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+
+
+.bottom{
+  
+  padding-top:1rem;
+  padding-bottom:1rem;
+
+  background-color: white;
+  min-width: 100%;
+  border-top : solid rgb(97, 97, 97) 0.12rem;
+
+  margin-top:auto;
+}
+
+.bottom h2{
+  margin:0.5em;
+  font-size:1.2em;
+}
+
+.bottomMenu{
+
+  display:flex;
+  flex-direction: row;
+
+  justify-content: space-around;
+  align-items: center;
+}
+
+#credit p{
+  display: flex;
+  padding-top: 1rem;
+  padding-bottom: 0.5rem;
+  align-items: center;
+  justify-content: center;
+
+  font-size : 0.7rem;
+  color:rgb(97, 97, 97);
+}
+
+.contact{
+  padding:0;
+  margin:0;
+}
+
+.credit{
+  font-size: 1rem;
+}
+
+ul{
+  list-style: square;
+}
+
+
+#contactLogo{
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  width: 8rem;
+}
+
+.loading.hidden {
+    display:none;
+}
+.loading:not(.hidden) + #url {
+  display:none;
+}
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.loading svg {
+  animation: spin 1.5s linear infinite;
+  height: 2.5rem;
+  width: 4rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (max-width:850px){
+  #logoPC{
+    display:none;
+  }
+  #headerDroite p{
+    display: none;
+  }
+
+}
+
+@media (min-width:850px){
+  #logoMobile{
+    display:none;
+  }
+}
+
