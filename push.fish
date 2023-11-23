@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
-set v 0.0.21
+set v 1.0.0
 
 docker build -t harbor.k8s.inpt.fr/net7/ade-feed-url:$v .
 docker push harbor.k8s.inpt.fr/net7/ade-feed-url:$v
