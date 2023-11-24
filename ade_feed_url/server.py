@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, NamedTuple, Optional
 
 from filelock import FileLock
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, send_from_directory
 from pytz import timezone
 from main import main, school_year_start
 from parse_feed import feed_as_json, parse_feed
@@ -155,6 +155,10 @@ def get_feed_url(uid: str) -> str:
 @app.route("/favicon.ico")
 def favicon():
     return "", 404
+
+@app.route("/assets/<path:path>")
+def assets(path):
+    return send_from_directory('assets', path)
 
 
 @app.route("/")
