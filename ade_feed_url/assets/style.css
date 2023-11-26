@@ -277,6 +277,10 @@ ul{
   width: 8rem;
 }
 
+#url{
+  overflow-wrap: anywhere;
+}
+
 .loading.hidden {
     display:none;
 }
