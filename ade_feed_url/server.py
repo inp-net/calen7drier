@@ -182,6 +182,18 @@ def redirect_to_feed(uid: str):
         return "internal error", 500
     return redirect(url)
 
+@app.route("/<uid>/goofy")
+def goofy_feed(uid: str):
+    try:
+        url = get_feed_url(uid)
+    except Exception as e:
+        if str(e) == "Not found":
+            return "not found", 404
+        log(uid, "redirect", f"Failed with exception {str(e)}", True)
+        return "internal error", 500
+    response = await requests.get(url)
+    return response.text.replace('Fasson Julien', "Le J (c'est le S)").replace("Riad Dhaou", "Complètement Daou").replace("Emmanuel Chaput", "Manux")
+
 
 @app.route("/<uid>/url")
 def show_feed_url(uid: str):
