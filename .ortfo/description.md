@@ -7,3 +7,5 @@ git: inp-net/calen7drier
 # Calen7drier
 
 Un petit service web qui permet aux étudiant·e·s de rajouter simplement leur emploi du temps dans leur application de calendrier de leur téléphone
+
+![](./screenshot.png)
