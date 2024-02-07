@@ -12,22 +12,25 @@ from churros.client import ChurrosClient
 from filelock import FileLock
 from flask import (Flask, make_response, redirect, render_template, request,
                    send_from_directory)
-from main import main, school_year_start
-from parse_feed import feed_as_json, parse_feed
 from pydantic import BaseModel
 from pytz import timezone
 from rich.console import Console
+
+from .main import main, school_year_start
+from .parse_feed import feed_as_json, parse_feed
 
 
 class Environment(BaseModel):
     CHURROS_CLIENT_ID: str
     CHURROS_CLIENT_SECRET: str
     ORIGIN: str
+    LOGIN_AS: str
+    PASSWORD: str
 
 
 console = Console()
 
-env = typed_dotenv.load_into(
+env: Environment = typed_dotenv.load_into(
     Environment, filename=Path(__file__).parent.parent / ".env"
 )
 
@@ -51,7 +54,7 @@ def logger_of(uid: str | None, area: str):
     return lambda *args: log(uid, area, " ".join(args))
 
 
-app = Flask("ade_feed_url")
+app = Flask("ade_feed_url", root_path=Path(__file__).parent)
 # app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 CACHE_LOCATION = Path("cache/cache.json")
@@ -153,13 +156,13 @@ def get_feed_url(uid: str) -> str:
     log(
         uid,
         "env",
-        f"using LOGIN_AS={getenv('LOGIN_AS', '')!r} PASSWORD={len(getenv('PASSWORD', '')) * '*'!r}",
+        f"using LOGIN_AS={env.LOGIN_AS} PASSWORD={len(env.PASSWORD) * '*'!r}",
     )
 
     url = main(
-        getenv("LOGIN_AS", ""),
+        env.LOGIN_AS,
         uid,
-        getenv("PASSWORD", ""),
+        env.PASSWORD,
         True,
         lambda *args: log(uid, "ade", " ".join(args)),
     )
@@ -167,6 +170,53 @@ def get_feed_url(uid: str) -> str:
 
     cache.add(uid, url)
     return url
+
+
+def graphql(query: str, token: str | None = None) -> Any:
+    return requests.post(
+        "https://churros.inpt.fr/graphql",
+        json={"query": query},
+        headers={"Authorization": f"Bearer {token}"} if token else {},
+    ).json()
+
+
+def can_access_calendar(churros_token: str) -> bool:
+    try:
+        if not churros_token:
+            return False
+        else:
+            data = graphql("query {me {uid, major { schools { uid } }}}", churros_token)
+
+            uid = data["data"]["me"]["uid"]
+            schools = [
+                school["uid"] for school in data["data"]["me"]["major"]["schools"]
+            ]
+            valid = any(school == "n7" for school in schools)
+
+            if valid:
+                log(uid, "auth", "passed")
+                return True
+            else:
+                log(
+                    uid,
+                    "auth",
+                    f"denied: n7 not in {', '.join(schools)}. response: {data}",
+                )
+                return False
+    except Exception:
+        log(None, "auth", "reject because of error")
+        return False
+
+
+def unauthorized_error():
+    if not can_access_calendar(
+        request.cookies.get("token") or request.args.get("token")
+    ):
+        return (
+            "unauthorized. pass a Churros token as a GET parameter or a cookie, named 'token'",
+            UNAUTHORIZED,
+        )
+    return None
 
 
 @app.route("/favicon.ico")
@@ -192,18 +242,33 @@ def oauth_callback():
         client_secret=env.CHURROS_CLIENT_SECRET,
         redirect_uri=f"{env.ORIGIN}/oauth/callback",
     )
-    # TODO check this properly
-    churros.state = request.cookies.get('csrf_state')
+
+    churros.state = request.cookies.get("csrf_state")
     token = churros.get_token(code, state)
 
     response = redirect("/")
-    response.set_cookie("token", token)
+    response.set_cookie("token", token, secure=True, httponly=True)
+    response.set_cookie("csrf_state", "", expires=0)
+    return response
+
+
+@app.route("/logout")
+def logout():
+    token = request.cookies.get("token")
+    if not token:
+        return "ok", 200
+
+    graphql("mutation { logout }", token)
+    response = make_response()
+    response.set_cookie("token", "", expires=0)
     return response
 
 
 @app.route("/")
 def home():
-    if not request.cookies.get("token"):
+    if can_access_calendar(request.cookies.get("token")):
+        return render_template("index.html")
+    else:
         churros = ChurrosClient(
             client_id=env.CHURROS_CLIENT_ID,
             client_secret=env.CHURROS_CLIENT_SECRET,
@@ -212,10 +277,8 @@ def home():
         churros.generate_state()
 
         response = redirect(churros.authorization_url)
-        response.set_cookie("csrf_state", churros.state)
+        response.set_cookie("csrf_state", churros.state, secure=True, httponly=True)
         return response
-
-    return render_template("index.html")
 
 
 @app.route("/cache")
@@ -226,6 +289,8 @@ def cache_status():
 
 @app.route("/<uid>")
 def redirect_to_feed(uid: str):
+    if err := unauthorized_error():
+        return err
     try:
         url = get_feed_url(uid)
     except Exception as e:
@@ -238,6 +303,8 @@ def redirect_to_feed(uid: str):
 
 @app.route("/<uid>/goofy")
 def goofy_feed(uid: str):
+    if err := unauthorized_error():
+        return err
     try:
         url = get_feed_url(uid)
     except Exception as e:
@@ -256,6 +323,8 @@ def goofy_feed(uid: str):
 
 @app.route("/<uid>/url")
 def show_feed_url(uid: str):
+    if err := unauthorized_error():
+        return err
     try:
         url = get_feed_url(uid)
     except Exception as e:
@@ -314,6 +383,8 @@ def next_exam(uid: str, subject_code: str):
 
 @app.route("/<uid>/next-exams")
 def next_exams(uid: str):
+    if err := unauthorized_error():
+        return err
     try:
         url = get_feed_url(uid)
         exams = [

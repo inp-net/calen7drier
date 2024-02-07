@@ -8,7 +8,7 @@ from typing import Any, Iterable, NamedTuple
 import requests
 from filelock import FileLock
 from ics import Calendar
-from main import main as main_main
+from .main import main as main_main
 from pytz import timezone
 
 REQUESTS_LOCK = FileLock(".requests_lock")
