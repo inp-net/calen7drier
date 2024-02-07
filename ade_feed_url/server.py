@@ -180,14 +180,14 @@ def graphql(query: str, token: str | None = None) -> Any:
     ).json()
 
 
-def can_access_calendar(churros_token: str) -> bool:
+def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
     try:
         if not churros_token:
             return False
         else:
-            data = graphql("query {me {uid, major { schools { uid } }}}", churros_token)
+            data = graphql("query {me {schoolUid, major { schools { uid } }}}", churros_token)
 
-            uid = data["data"]["me"]["uid"]
+            uid = data["data"]["me"]["schoolUid"]
             schools = [
                 school["uid"] for school in data["data"]["me"]["major"]["schools"]
             ]
@@ -195,7 +195,7 @@ def can_access_calendar(churros_token: str) -> bool:
 
             if valid:
                 log(uid, "auth", "passed")
-                return True
+                return data['data']['me']
             else:
                 log(
                     uid,
@@ -203,8 +203,10 @@ def can_access_calendar(churros_token: str) -> bool:
                     f"denied: n7 not in {', '.join(schools)}. response: {data}",
                 )
                 return False
-    except Exception:
-        log(None, "auth", "reject because of error")
+    except KeyError:
+        log(None, "auth", f"reject because of GraphQL error {data!r}")
+    except Exception as e:
+        log(None, "auth", f"reject because of error {e!r}")
         return False
 
 
@@ -266,8 +268,8 @@ def logout():
 
 @app.route("/")
 def home():
-    if can_access_calendar(request.cookies.get("token")):
-        return render_template("index.html")
+    if (user := can_access_calendar(request.cookies.get("token"))):
+        return render_template("index.html.j2", school_uid=user['schoolUid'])
     else:
         churros = ChurrosClient(
             client_id=env.CHURROS_CLIENT_ID,
