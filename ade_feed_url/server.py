@@ -4,7 +4,7 @@ from datetime import date, datetime
 from http.client import UNAUTHORIZED
 from os import getenv
 from pathlib import Path
-from typing import Any, NamedTuple, Optional
+from typing import Any, Literal, NamedTuple, Optional
 
 import requests
 import typed_dotenv
@@ -27,13 +27,21 @@ class Environment(BaseModel):
     LOGIN_AS: str
     PASSWORD: str
 
+dotenv_file = Path(__file__).parent.parent / ".env"
+env: Environment
+
+if dotenv_file.exists():
+    env = typed_dotenv.load_into(Environment, filename=dotenv_file)
+else:
+    env = Environment(
+        CHURROS_CLIENT_ID=getenv("CHURROS_CLIENT_ID"),
+        CHURROS_CLIENT_SECRET=getenv("CHURROS_CLIENT_SECRET"),
+        ORIGIN=getenv("ORIGIN"),
+        LOGIN_AS=getenv("LOGIN_AS"),
+        PASSWORD=getenv("PASSWORD"),
+    )
 
 console = Console()
-
-env: Environment = typed_dotenv.load_into(
-    Environment, filename=Path(__file__).parent.parent / ".env"
-)
-
 
 def log(uid: str | None, area: str, message: str, error=False):
     c = lambda color: "red" if error else color
