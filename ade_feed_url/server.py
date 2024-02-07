@@ -1,18 +1,35 @@
 import json
 from contextlib import contextmanager
 from datetime import date, datetime
+from http.client import UNAUTHORIZED
 from os import getenv
 from pathlib import Path
 from typing import Any, NamedTuple, Optional
 
+import requests
+import typed_dotenv
+from churros.client import ChurrosClient
 from filelock import FileLock
-from flask import Flask, redirect, render_template, send_from_directory
-from pytz import timezone
+from flask import (Flask, make_response, redirect, render_template, request,
+                   send_from_directory)
 from main import main, school_year_start
 from parse_feed import feed_as_json, parse_feed
+from pydantic import BaseModel
+from pytz import timezone
 from rich.console import Console
 
+
+class Environment(BaseModel):
+    CHURROS_CLIENT_ID: str
+    CHURROS_CLIENT_SECRET: str
+    ORIGIN: str
+
+
 console = Console()
+
+env = typed_dotenv.load_into(
+    Environment, filename=Path(__file__).parent.parent / ".env"
+)
 
 
 def log(uid: str | None, area: str, message: str, error=False):
@@ -156,14 +173,50 @@ def get_feed_url(uid: str) -> str:
 def favicon():
     return "", 404
 
+
 @app.route("/assets/<path:path>")
 def assets(path):
-    return send_from_directory('assets', path)
+    return send_from_directory("assets", path)
+
+
+@app.route("/oauth/callback")
+def oauth_callback():
+    code = request.args.get("code")
+    state = request.args.get("state")
+
+    if not code or not state:
+        return "Unauthorized", UNAUTHORIZED
+
+    churros = ChurrosClient(
+        client_id=env.CHURROS_CLIENT_ID,
+        client_secret=env.CHURROS_CLIENT_SECRET,
+        redirect_uri=f"{env.ORIGIN}/oauth/callback",
+    )
+    # TODO check this properly
+    churros.state = request.cookies.get('csrf_state')
+    token = churros.get_token(code, state)
+
+    response = redirect("/")
+    response.set_cookie("token", token)
+    return response
 
 
 @app.route("/")
 def home():
+    if not request.cookies.get("token"):
+        churros = ChurrosClient(
+            client_id=env.CHURROS_CLIENT_ID,
+            client_secret=env.CHURROS_CLIENT_SECRET,
+            redirect_uri=f"{env.ORIGIN}/oauth/callback",
+        )
+        churros.generate_state()
+
+        response = redirect(churros.authorization_url)
+        response.set_cookie("csrf_state", churros.state)
+        return response
+
     return render_template("index.html")
+
 
 @app.route("/cache")
 def cache_status():
@@ -182,6 +235,7 @@ def redirect_to_feed(uid: str):
         return "internal error", 500
     return redirect(url)
 
+
 @app.route("/<uid>/goofy")
 def goofy_feed(uid: str):
     try:
@@ -191,8 +245,13 @@ def goofy_feed(uid: str):
             return "not found", 404
         log(uid, "redirect", f"Failed with exception {str(e)}", True)
         return "internal error", 500
-    response = await requests.get(url)
-    return response.text.replace('Fasson Julien', "Le J (c'est le S)").replace("Riad Dhaou", "Complètement Daou").replace("Emmanuel Chaput", "Manux")
+    response = requests.get(url)
+    content = (
+        response.text.replace("Fasson Julien", "Le J (c'est le S)")
+        .replace("Riad Dhaou", "Complètement Daou")
+        .replace("Emmanuel Chaput", "Manux")
+    )
+    return content, {"Content-Type": "text/calendar;charset=UTF-8"}
 
 
 @app.route("/<uid>/url")
