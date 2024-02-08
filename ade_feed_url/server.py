@@ -27,6 +27,7 @@ class Environment(BaseModel):
     LOGIN_AS: str
     PASSWORD: str
 
+
 dotenv_file = Path(__file__).parent.parent / ".env"
 env: Environment
 
@@ -42,6 +43,7 @@ else:
     )
 
 console = Console()
+
 
 def log(uid: str | None, area: str, message: str, error=False):
     c = lambda color: "red" if error else color
@@ -193,7 +195,9 @@ def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
         if not churros_token:
             return False
         else:
-            data = graphql("query {me {schoolUid, major { schools { uid } }}}", churros_token)
+            data = graphql(
+                "query {me {schoolUid, major { schools { uid } }}}", churros_token
+            )
 
             uid = data["data"]["me"]["schoolUid"]
             schools = [
@@ -203,7 +207,7 @@ def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
 
             if valid:
                 log(uid, "auth", "passed")
-                return data['data']['me']
+                return data["data"]["me"]
             else:
                 log(
                     uid,
@@ -220,7 +224,9 @@ def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
 
 def unauthorized_error():
     if not can_access_calendar(
-        request.cookies.get("token") or request.args.get("token")
+        request.cookies.get("token")
+        or request.args.get("token")
+        or request.headers.get("Authorization", "").replace("Bearer ", "")
     ):
         return (
             "unauthorized. pass a Churros token as a GET parameter or a cookie, named 'token'",
@@ -276,8 +282,8 @@ def logout():
 
 @app.route("/")
 def home():
-    if (user := can_access_calendar(request.cookies.get("token"))):
-        return render_template("index.html.j2", school_uid=user['schoolUid'])
+    if user := can_access_calendar(request.cookies.get("token")):
+        return render_template("index.html.j2", school_uid=user["schoolUid"])
     else:
         churros = ChurrosClient(
             client_id=env.CHURROS_CLIENT_ID,
