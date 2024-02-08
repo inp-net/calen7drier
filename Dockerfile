@@ -33,4 +33,4 @@ COPY . .
 
 EXPOSE 5000
 # CMD cd ade_feed_url && poetry run uwsgi --http 0.0.0.0:8080 --master -p 1 -w server:app
-CMD cd ade_feed_url && poetry run flask --app server run --host 0.0.0.0 --port 5000
+CMD poetry run flask --app ade_feed_url.server run --host 0.0.0.0 --port 5000
