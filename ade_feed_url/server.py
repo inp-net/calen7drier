@@ -10,8 +10,14 @@ import requests
 import typed_dotenv
 from churros.client import ChurrosClient
 from filelock import FileLock
-from flask import (Flask, make_response, redirect, render_template, request,
-                   send_from_directory)
+from flask import (
+    Flask,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+)
 from pydantic import BaseModel
 from pytz import timezone
 from rich.console import Console
@@ -46,7 +52,9 @@ console = Console()
 
 
 def log(uid: str | None, area: str, message: str, error=False):
-    c = lambda color: "red" if error else color
+    def c(color):
+        return "red" if error else color
+
     cyan = c("cyan")
     magenta = c("magenta")
     console.print(
@@ -446,7 +454,8 @@ def subjects(uid: str):
         log(uid, "subjects", f"Failed with exception {e!r}", True)
         return "internal error", 500
 
+
 @app.after_request
 def handle_cors(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers["Access-Control-Allow-Origin"] = "*"
     return response

@@ -1,15 +1,14 @@
 #!/usr/bin/env python
-import json
 from datetime import datetime
 from os import getenv
-from pathlib import Path
 from typing import Any, Iterable, NamedTuple
 
 import requests
 from filelock import FileLock
 from ics import Calendar
-from .main import main as main_main
 from pytz import timezone
+
+from .main import main as main_main
 
 REQUESTS_LOCK = FileLock(".requests_lock")
 

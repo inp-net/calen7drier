@@ -20,11 +20,14 @@ pyvirtualdisplay = "^3.0"
 churros = "^0.6.0"
 typed-dotenv = {extras = ["pydantic"], version = "^1.0.1"}
 
-[tool.poetry.group.dev.dependencies]
-black = "^23.9.1"
-
 [tool.poetry.scripts]
 ade-feed-url = "ade_feed_url.main:run"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.3.4"
+
+[tool.ruff.lint]
+extend-select = ["I"]
 
 [build-system]
 requires = ["poetry-core"]

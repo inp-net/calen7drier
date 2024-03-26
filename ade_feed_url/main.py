@@ -13,31 +13,39 @@ Options:
 
 import subprocess
 from datetime import date
-from pathlib import Path
 from time import sleep
-from selenium.webdriver.chrome.options import Options
-from pyvirtualdisplay import Display
 
 from docopt import docopt
-from filelock import FileLock, Timeout
-from helium import *
+from filelock import FileLock
+from helium import (
+    S,
+    click,
+    get_driver,
+    go_to,
+    kill_browser,
+    start_chrome,
+    wait_until,
+    write,
+)
+from pyvirtualdisplay import Display
+from selenium.webdriver.chrome.options import Options
 
 helium_lock = FileLock(".helium_lock", timeout=60 * 60)
 
 
-
 def login_to_ade(username: str, password: str = "", verbose=False, logger=print):
-
     chrome_options = Options()
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
     password = password or subprocess.run(
         ["rbw", "get", "inp-toulouse.fr"], capture_output=True
     ).stdout.decode("utf-8")
     if verbose:
         logger(f"Logging in as {username}…")
-    start_chrome("http://planete.inp-toulouse.fr", headless=False, options=chrome_options)
+    start_chrome(
+        "http://planete.inp-toulouse.fr", headless=False, options=chrome_options
+    )
 
     click("S'identifier")
     write(username, into="Username")
@@ -45,24 +53,24 @@ def login_to_ade(username: str, password: str = "", verbose=False, logger=print)
     click("Login")
     sleep(3)
     if verbose:
-        logger(f"Opening ADE…")
+        logger("Opening ADE…")
     go_to("https://edt.inp-toulouse.fr/direct/myplanning.jsp")
     sleep(6)
 
 
 def go_to_user_planning(username: str, verbose=False, logger=print):
     if verbose:
-        logger(f"Opening advanced search")
+        logger("Opening advanced search")
     button_selector = "button[aria-describedby=x-auto-7]"
-    if verbose: logger(f"Waiting for {button_selector!r} to exist on page...")
+    if verbose:
+        logger(f"Waiting for {button_selector!r} to exist on page...")
     wait_until(S(button_selector).exists)
-    if verbose: logger(f"Clicking on {button_selector!r}")
-    get_driver().execute_script(
-        f'document.querySelector({button_selector!r}).click()'
-    )
+    if verbose:
+        logger(f"Clicking on {button_selector!r}")
+    get_driver().execute_script(f"document.querySelector({button_selector!r}).click()")
     sleep(3)
     if verbose:
-        logger(f"Selecting uid filter mode")
+        logger("Selecting uid filter mode")
     click("uid")
     click("Ok")
     if verbose:
@@ -74,11 +82,13 @@ def go_to_user_planning(username: str, verbose=False, logger=print):
 
 def get_resource_id(verbose=False, logger=print) -> str:
     if verbose:
-        logger(f"Scraping resource id")
-    selector = '.x-grid3-row-selected[id^=\"Direct Planning Tree\"] .x-tree3-node[id^=\"Direct Planning Tree\"]'
-    if verbose: logger(f"Waiting for {selector!r} to exist on page")
+        logger("Scraping resource id")
+    selector = '.x-grid3-row-selected[id^="Direct Planning Tree"] .x-tree3-node[id^="Direct Planning Tree"]'
+    if verbose:
+        logger(f"Waiting for {selector!r} to exist on page")
     wait_until(S(selector).exists)
-    if verbose: logger(f"Getting id attribute of {selector!r}")
+    if verbose:
+        logger(f"Getting id attribute of {selector!r}")
     resource_id = (
         get_driver()
         .execute_script(
