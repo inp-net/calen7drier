@@ -220,7 +220,7 @@ def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
                 log(
                     uid,
                     "auth",
-                    f"denied: n7 not in {', '.join(schools)}. response: {data}",
+                    f"denied: n7 not in {', '.join(schools)}. response: {data}, headers: {request.headers}",
                 )
                 return False
     except KeyError:
