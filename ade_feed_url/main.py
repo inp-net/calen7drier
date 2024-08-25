@@ -141,7 +141,7 @@ def main(
     return ical_url
 
 
-def run(options):
+def run(options = None):
     options = options or docopt(__doc__)
     for_username = options["<for_username>"]
     login_as_username = options["<login_as_username>"] or for_username
