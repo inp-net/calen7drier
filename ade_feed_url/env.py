@@ -20,8 +20,8 @@ if dotenv_file.exists():
     env = typed_dotenv.load_into(Environment, filename=dotenv_file)
 else:
     env = Environment(
-        CHURROS_CLIENT_ID=getenv("CHURROS_CLIENT_ID"),
-        CHURROS_CLIENT_SECRET=getenv("CHURROS_CLIENT_SECRET"),
+        CHURROS_CLIENT_ID=getenv("OAUTH_CLIENT_ID"),
+        CHURROS_CLIENT_SECRET=getenv("OAUTH_CLIENT_SECRET"),
         ORIGIN=getenv("ORIGIN"),
         LOGIN_AS=getenv("LOGIN_AS"),
         PASSWORD=getenv("PASSWORD"),
