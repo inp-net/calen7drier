@@ -182,3 +182,5 @@ ade_feed_url/cache/.lock
 ade_feed_url/.helium_lock
 ade_feed_url/.requests_lock
 ade_feed_url/cache
+cache
+.helium_lock

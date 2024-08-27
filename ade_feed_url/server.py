@@ -1,4 +1,5 @@
 import json
+import base64
 from contextlib import contextmanager
 from datetime import date, datetime
 from http.client import UNAUTHORIZED
@@ -8,7 +9,6 @@ from typing import Any, Literal, NamedTuple, Optional
 
 import requests
 import typed_dotenv
-from churros.client import ChurrosClient
 from filelock import FileLock
 from flask import (
     Flask,
@@ -18,6 +18,7 @@ from flask import (
     request,
     send_from_directory,
 )
+import nanoid
 from pydantic import BaseModel
 from pytz import timezone
 from rich.console import Console
@@ -27,8 +28,8 @@ from .parse_feed import feed_as_json, parse_feed
 
 
 class Environment(BaseModel):
-    CHURROS_CLIENT_ID: str
-    CHURROS_CLIENT_SECRET: str
+    OAUTH_CLIENT_ID: str
+    OAUTH_CLIENT_SECRET: str
     ORIGIN: str
     LOGIN_AS: str
     PASSWORD: str
@@ -190,48 +191,22 @@ def get_feed_url(uid: str) -> str:
     return url
 
 
-def graphql(query: str, token: str | None = None) -> Any:
-    return requests.post(
-        "https://churros.inpt.fr/graphql",
-        json={"query": query},
-        headers={"Authorization": f"Bearer {token}"} if token else {},
-    ).json()
-
-
-def can_access_calendar(churros_token: str) -> Literal[False] | dict[str, Any]:
+def user_profile(token: str) -> Literal[False] | dict[str, Any]:
     try:
-        if not churros_token:
+        if not token:
             return False
         else:
-            data = graphql(
-                "query {me {schoolUid, major { schools { uid } }}}", churros_token
-            )
-
-            uid = data["data"]["me"]["schoolUid"]
-            schools = [
-                school["uid"] for school in data["data"]["me"]["major"]["schools"]
-            ]
-            valid = any(school == "n7" for school in schools)
-
-            if valid:
-                log(uid, "auth", "passed")
-                return data["data"]["me"]
-            else:
-                log(
-                    uid,
-                    "auth",
-                    f"denied: n7 not in {', '.join(schools)}. response: {data}, headers: {request.headers}",
-                )
-                return False
-    except KeyError:
-        log(None, "auth", f"reject because of GraphQL error {data!r}")
+            return requests.get(
+                "https://auth.inpt.fr/application/o/userinfo/",
+                headers={"Authorization": f"Bearer {token}"},
+            ).json()
     except Exception as e:
         log(None, "auth", f"reject because of error {e!r}")
         return False
 
 
 def unauthorized_error():
-    if not can_access_calendar(
+    if not user_profile(
         request.cookies.get("token")
         or request.args.get("token")
         or request.headers.get("Authorization", "").replace("Bearer ", "")
@@ -261,14 +236,20 @@ def oauth_callback():
     if not code or not state:
         return "Unauthorized", UNAUTHORIZED
 
-    churros = ChurrosClient(
-        client_id=env.CHURROS_CLIENT_ID,
-        client_secret=env.CHURROS_CLIENT_SECRET,
-        redirect_uri=f"{env.ORIGIN}/oauth/callback",
-    )
+    # FIXME csrf_state is the _previous login_'s state, so this doesn't work...
+    # csrf_state = request.cookies.get("csrf_state")
+    # print(f"{csrf_state=}")
+    # if state != csrf_state:
+    #     return "Possible CSRF attack", UNAUTHORIZED
 
-    churros.state = request.cookies.get("csrf_state")
-    token = churros.get_token(code, state)
+    token = requests.post(
+        "https://auth.inpt.fr/application/o/token/",
+        headers={
+            "Authorization": f"Basic {base64.b64encode(f'{env.OAUTH_CLIENT_ID}:{env.OAUTH_CLIENT_SECRET}'.encode()).decode()}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data=f"grant_type=authorization_code&code={code}&redirect_uri={env.ORIGIN}/oauth/callback",
+    ).json()["access_token"]
 
     response = redirect("/")
     response.set_cookie("token", token, secure=True, httponly=True)
@@ -282,26 +263,21 @@ def logout():
     if not token:
         return "ok", 200
 
-    graphql("mutation { logout }", token)
-    response = make_response()
+    response = redirect("https://auth.inpt.fr/application/o/calen7drier/end-session/")
     response.set_cookie("token", "", expires=0)
     return response
 
 
 @app.route("/")
 def home():
-    if user := can_access_calendar(request.cookies.get("token")):
+    if user := user_profile(request.cookies.get("token")):
         return render_template("index.html.j2", school_uid=user["schoolUid"])
     else:
-        churros = ChurrosClient(
-            client_id=env.CHURROS_CLIENT_ID,
-            client_secret=env.CHURROS_CLIENT_SECRET,
-            redirect_uri=f"{env.ORIGIN}/oauth/callback",
+        state = nanoid.generate(size=32)
+        response = redirect(
+            f"https://auth.inpt.fr/application/o/authorize/?client_id={env.OAUTH_CLIENT_ID}&response_type=code&redirect_uri={env.ORIGIN}/oauth/callback&state={state}&scopes=churros:school_uid"
         )
-        churros.generate_state()
-
-        response = redirect(churros.authorization_url)
-        response.set_cookie("csrf_state", churros.state, secure=True, httponly=True)
+        response.set_cookie("csrf_state", state, secure=True, httponly=True)
         return response
 
 
