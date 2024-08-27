@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
-set v 2.0.0
+set v 2.0.1
 
 docker build -t harbor.k8s.inpt.fr/net7/ade-feed-url:$v .
 # latest tag
