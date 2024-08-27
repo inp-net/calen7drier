@@ -3,51 +3,26 @@ import base64
 from contextlib import contextmanager
 from datetime import date, datetime
 from http.client import UNAUTHORIZED
-from os import getenv
 from pathlib import Path
 from typing import Any, Literal, NamedTuple, Optional
 
 import requests
-import typed_dotenv
 from filelock import FileLock
 from flask import (
     Flask,
-    make_response,
     redirect,
     render_template,
     request,
     send_from_directory,
 )
 import nanoid
-from pydantic import BaseModel
 from pytz import timezone
 from rich.console import Console
 
 from .main import main, school_year_start
 from .parse_feed import feed_as_json, parse_feed
+from .env import env
 
-
-class Environment(BaseModel):
-    OAUTH_CLIENT_ID: str
-    OAUTH_CLIENT_SECRET: str
-    ORIGIN: str
-    LOGIN_AS: str
-    PASSWORD: str
-
-
-dotenv_file = Path(__file__).parent.parent / ".env"
-env: Environment
-
-if dotenv_file.exists():
-    env = typed_dotenv.load_into(Environment, filename=dotenv_file)
-else:
-    env = Environment(
-        CHURROS_CLIENT_ID=getenv("CHURROS_CLIENT_ID"),
-        CHURROS_CLIENT_SECRET=getenv("CHURROS_CLIENT_SECRET"),
-        ORIGIN=getenv("ORIGIN"),
-        LOGIN_AS=getenv("LOGIN_AS"),
-        PASSWORD=getenv("PASSWORD"),
-    )
 
 console = Console()
 

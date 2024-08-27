@@ -29,6 +29,7 @@ from helium import (
 )
 from pyvirtualdisplay import Display
 from selenium.webdriver.chrome.options import Options
+from .env import env
 
 helium_lock = FileLock(".helium_lock", timeout=60 * 60)
 
@@ -115,7 +116,7 @@ def make_ical_url(resource_id: str, verbose=False, logger=print):
     startOfSchoolYear = f"{school_year_start(date.today())}-09-01"
     endOfSchoolYear = f"{school_year_start(date.today())+1}-08-20"
 
-    return f"https://edt.inp-toulouse.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource_id}&projectId=65&calType=ical&firstDate={startOfSchoolYear}&lastDate={endOfSchoolYear}"
+    return f"https://edt.inp-toulouse.fr/jsp/custom/modules/plannings/anonymous_cal.jsp?resources={resource_id}&projectId={env.ADE_PROJECT_ID}&calType=ical&firstDate={startOfSchoolYear}&lastDate={endOfSchoolYear}"
 
 
 def main(
