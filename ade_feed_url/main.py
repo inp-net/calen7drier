@@ -126,26 +126,31 @@ def main(
     verbose=False,
     logger=print,
 ):
-    with helium_lock:
-        logger("Acquired helium lock")
-        display = Display(visible=0, size=(800, 600))
-        display.start()
-        login_to_ade(login_as_username, password, verbose, logger)
-        go_to_user_planning(for_username, verbose, logger)
-        resource_id = get_resource_id(verbose, logger)
-        ical_url = make_ical_url(resource_id, verbose, logger)
-        kill_browser()
-        display.stop()
-    logger("Released helium lock")
-    logger(ical_url)
-    return ical_url
+    # with helium_lock:
+    #     logger("Acquired helium lock")
+    #     display = Display(visible=0, size=(800, 600))
+    #     display.start()
+    #     login_to_ade(login_as_username, password, verbose, logger)
+    #     go_to_user_planning(for_username, verbose, logger)
+    #     resource_id = get_resource_id(verbose, logger)
+    #     ical_url = make_ical_url(resource_id, verbose, logger)
+    #     kill_browser()
+    #     display.stop()
+    # logger("Released helium lock")
+    # logger(ical_url)
+    # return ical_url
+    resource_id = int(subprocess.run(
+        ["ade-bash-client/main.sh", login_as_username, for_username], input=password.encode("utf-8"), capture_output=True
+    ).stdout.decode("utf-8"))
+    return make_ical_url(resource_id)
+
 
 
 def run(options = None):
     options = options or docopt(__doc__)
     for_username = options["<for_username>"]
     login_as_username = options["<login_as_username>"] or for_username
-    password = options["<password>"]
+    password = options["<password>"] or env.PASSWORD
     verbose = options["--verbose"]
 
     return main(login_as_username, for_username, password, verbose)
