@@ -23,7 +23,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
 
-RUN apt-get update && apt-get install -y libpcre3 libpcre3-dev 
+RUN apt-get update && apt-get install -y libpcre3 libpcre3-dev pup jq
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \
