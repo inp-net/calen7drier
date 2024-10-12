@@ -704,13 +704,13 @@ parproc = ["rich"]
 
 [[package]]
 name = "typed-dotenv"
-version = "1.0.1"
+version = "2.0.2"
 description = "Handle .env files with types"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = [
-    {file = "typed_dotenv-1.0.1-py3-none-any.whl", hash = "sha256:458b3a8cbba50018a1529fb6080985b20044d8dccee7a21378aa6a147675e03d"},
-    {file = "typed_dotenv-1.0.1.tar.gz", hash = "sha256:616db9a60e0a66d4d87dbfe015e44b4f6a992700d566c6baccd75fd4de9f74d4"},
+    {file = "typed_dotenv-2.0.2-py3-none-any.whl", hash = "sha256:d79d5a95a33466ca9dac0b9351bef787099f02a651ba9921000d0ff2d4626de2"},
+    {file = "typed_dotenv-2.0.2.tar.gz", hash = "sha256:e10350ea222326d106f7a354c9da4bc9e70cb1c371864e01c036d83bda7e4609"},
 ]
 
 [package.dependencies]
@@ -808,4 +808,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "8a8256c1ccba53ab4e2aeaa56b7ba7aed4c9ef5ec45f8aed082704a7d9b38d0d"
+content-hash = "28b88c40c49186c2a12c1bb7691719d990ff5d33c4e3eafdd8f371b9bc9f3020"
