@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.13
 
 # install all packages for chromedriver: https://gist.github.com/varyonic/dea40abcf3dd891d204ef235c6e8dd79
 RUN apt-get update
