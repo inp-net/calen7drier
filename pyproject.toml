@@ -24,7 +24,7 @@ nanoid = "^2.0.0"
 ade-feed-url = "ade_feed_url.main:run"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.0"
+ruff = "^0.7.0"
 
 [tool.ruff.lint]
 extend-select = ["I"]
