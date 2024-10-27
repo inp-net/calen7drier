@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-helium = "^3.2.6"
+helium = "^5.0.0"
 beautifulsoup4 = "^4.12.2"
 docopt = "^0.6.2"
 ics = "^0.7.2"
