@@ -4,14 +4,10 @@ from os import getenv
 from typing import Any, Iterable, NamedTuple
 
 import requests
-from filelock import FileLock
 from ics import Calendar
 from pytz import timezone
 
 from .main import main as main_main
-
-REQUESTS_LOCK = FileLock(".requests_lock")
-
 
 class ADEEvent(NamedTuple):
     starts_at: datetime

@@ -1,10 +1,6 @@
 FROM python:3.13
 
-# install all packages for chromedriver: https://gist.github.com/varyonic/dea40abcf3dd891d204ef235c6e8dd79
 RUN apt-get update
-RUN apt-get -y install lsb-release libappindicator3-1 xvfb
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN dpkg -i google-chrome-stable_current_amd64.deb || true
 RUN apt-get -fy install
 
 # System deps
@@ -23,7 +19,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
 
-RUN apt-get update && apt-get install -y libpcre3 libpcre3-dev 
+RUN apt-get update && apt-get install -y pup jq
 
 # Project initialization:
 RUN poetry config virtualenvs.create false \

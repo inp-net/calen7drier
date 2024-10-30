@@ -7,17 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-helium = "^3.2.6"
 beautifulsoup4 = "^4.12.2"
 docopt = "^0.6.2"
 ics = "^0.7.2"
 pytz = "^2023.3.post1"
 flask = "^3.0.0"
 rich = "^13.6.0"
-filelock = "^3.12.4"
-uwsgi = "^2.0.22"
-pyvirtualdisplay = "^3.0"
-typed-dotenv = {extras = ["pydantic"], version = "^2.0.0"}
+typed-dotenv = {extras = ["pydantic"], version = "^1.0.1"}
 nanoid = "^2.0.0"
 
 [tool.poetry.scripts]
