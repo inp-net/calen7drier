@@ -13,7 +13,7 @@ ics = "^0.7.2"
 pytz = "^2023.3.post1"
 flask = "^3.0.0"
 rich = "^13.6.0"
-typed-dotenv = {extras = ["pydantic"], version = "^1.0.1"}
+typed-dotenv = {extras = ["pydantic"], version = "^2.0.0"}
 nanoid = "^2.0.0"
 
 [tool.poetry.scripts]
